@@ -10,7 +10,20 @@ sudo rm -f /mnt/swapfile /swapfile || true
 # swap на /mnt (ext4)
 SWAPF=/mnt/swapfile
 sudo fallocate -l "${SWAP_GB}G" "$SWAPF"
-sudo chmod 600 "$SWAPF"; sudo mkswap -q "$SWAPF"; sudo swapon "$SWAPF"
+sudo chmod 600 "$SWAPF"; sudo mkswap -q "$SWAPF"; sudo swapon -p 0 "$SWAPF"
+
+# zram (сжатый swap в RAM) с более высоким приоритетом
+if sudo modprobe zram num_devices=1 2>/dev/null; then
+  echo zstd | sudo tee /sys/block/zram0/comp_algorithm >/dev/null 2>&1 || true
+  echo 8G   | sudo tee /sys/block/zram0/disksize >/dev/null
+  sudo mkswap -q /dev/zram0 && sudo swapon -p 100 /dev/zram0 || true
+fi
+sudo sysctl -qw vm.swappiness=100 vm.overcommit_memory=1 || true
+
+# Не дать OOM-killer'у убить агент GitHub Actions (иначе job "canceled")
+for p in $(pgrep -f 'Runner.Listener|Runner.Worker|actions-runner' || true); do
+  echo -1000 | sudo tee /proc/$p/oom_score_adj >/dev/null 2>&1 || true
+done
 
 df -h / /mnt || true
 ROOT_DEV=$(df --output=source / | tail -1); MNT_DEV=$(df --output=source /mnt | tail -1)

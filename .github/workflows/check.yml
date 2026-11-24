@@ -44,7 +44,7 @@ jobs:
         with: { path: crdroid-ice }
       - run: crdroid-ice/scripts/free-space.sh
       - name: Диск (btrfs+zstd) и swap
-        run: crdroid-ice/scripts/disk-setup.sh /home/runner/rom 12
+        run: crdroid-ice/scripts/disk-setup.sh /home/runner/rom 24
       - run: |
           crdroid-ice/scripts/setup-runner.sh
           echo "REPO_DIR=$GITHUB_WORKSPACE/crdroid-ice" >> "$GITHUB_ENV"
