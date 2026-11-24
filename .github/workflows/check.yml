@@ -43,22 +43,14 @@ jobs:
       - uses: actions/checkout@v7
         with: { path: crdroid-ice }
       - run: crdroid-ice/scripts/free-space.sh
-      - uses: easimon/maximize-build-space@v10
-        with:
-          root-reserve-mb: 6144
-          temp-reserve-mb: 512
-          swap-size-mb: 20480
-          build-mount-path: /home/runner/rom
-          remove-dotnet: 'true'
-          remove-android: 'true'
-          remove-haskell: 'true'
-          remove-codeql: 'true'
-          remove-docker-images: 'true'
+      - name: Диск (btrfs+zstd) и swap
+        run: crdroid-ice/scripts/disk-setup.sh /home/runner/rom 12
       - run: |
           crdroid-ice/scripts/setup-runner.sh
           echo "REPO_DIR=$GITHUB_WORKSPACE/crdroid-ice" >> "$GITHUB_ENV"
       - run: crdroid-ice/scripts/sync.sh
       - run: crdroid-ice/scripts/apply-patches.sh
+      - run: crdroid-ice/scripts/prune.sh
       - name: m nothing
         run: |
           crdroid-ice/scripts/build-stage.sh $(( $(date +%s) + 150*60 )) 0 nothing
@@ -66,7 +58,7 @@ jobs:
           if [[ "$S" != done ]]; then tail -n 150 "$ROM_ROOT/src/out/error.log" 2>/dev/null; exit 1; fi
       - name: Диск после sync
         if: always()
-        run: df -h /home/runner/rom; du -sh /home/runner/rom/src/.repo /home/runner/rom/src/out 2>/dev/null || true
+        run: df -h /home/runner/rom; sudo btrfs filesystem usage -T /home/runner/rom || true; sudo compsize -x /home/runner/rom 2>/dev/null | head || true; du -sh --apparent-size /home/runner/rom/src 2>/dev/null || true
       - uses: actions/upload-artifact@v7
         if: failure()
         with:

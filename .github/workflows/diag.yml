@@ -15,25 +15,17 @@ jobs:
       - uses: actions/checkout@v7
         with: { path: crdroid-ice }
       - run: crdroid-ice/scripts/free-space.sh
-      - uses: easimon/maximize-build-space@v10
-        with:
-          root-reserve-mb: 2048
-          temp-reserve-mb: 256
-          swap-size-mb: 1024
-          build-mount-path: /home/runner/rom
-          remove-dotnet: 'true'
-          remove-android: 'true'
-          remove-haskell: 'true'
-          remove-codeql: 'true'
-          remove-docker-images: 'true'
+      - name: Диск (btrfs+zstd) и swap
+        run: crdroid-ice/scripts/disk-setup.sh /home/runner/rom 12
       - run: |
           crdroid-ice/scripts/setup-runner.sh
           echo "REPO_DIR=$GITHUB_WORKSPACE/crdroid-ice" >> "$GITHUB_ENV"
       - run: crdroid-ice/scripts/sync.sh || true
+      - run: crdroid-ice/scripts/prune.sh || true
       - if: always()
         run: |
           cd /home/runner/rom/src
           df -h .
           echo "== .repo"; du -sh .repo; du -sh .repo/* 2>/dev/null
           echo "== top objects"; du -s .repo/project-objects/* .repo/project-objects/*/* 2>/dev/null | sort -rn | head -40
-          echo "== top checkout"; du -s --exclude=.repo --exclude=.git ./* ./*/* ./*/*/* 2>/dev/null | sort -rn | head -60
+          echo "== top checkout"; for d in prebuilts prebuilts/* prebuilts/*/* prebuilts/clang/host/linux-x86/* external/* kernel/* device/*/* cts packages/*; do [ -d "$d" ] && du -s --apparent-size --exclude=.git "$d"; done 2>/dev/null | sort -rn | head -80

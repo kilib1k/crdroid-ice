@@ -40,18 +40,8 @@ jobs:
       - name: Освобождение диска
         run: crdroid-ice/scripts/free-space.sh
 
-      - name: Объединение дисков (LVM) + swap
-        uses: easimon/maximize-build-space@v10
-        with:
-          root-reserve-mb: 6144
-          temp-reserve-mb: 512
-          swap-size-mb: 20480
-          build-mount-path: /home/runner/rom
-          remove-dotnet: 'true'
-          remove-android: 'true'
-          remove-haskell: 'true'
-          remove-codeql: 'true'
-          remove-docker-images: 'true'
+      - name: Диск (btrfs+zstd) и swap
+        run: crdroid-ice/scripts/disk-setup.sh /home/runner/rom 12
 
       - name: Зависимости
         run: |
@@ -94,6 +84,9 @@ jobs:
 
       - name: Патчи
         run: crdroid-ice/scripts/apply-patches.sh
+
+      - name: Очистка исходников (git-объекты, лишние clang)
+        run: crdroid-ice/scripts/prune.sh
 
       - name: Сборка (с ограничением по времени)
         run: |

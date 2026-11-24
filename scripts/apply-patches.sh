@@ -29,4 +29,8 @@ fi
 # Хук для правок, которые проще сделать скриптом
 HOOK="$REPO_DIR/patches/$CRDROID_BRANCH/fixups.sh"
 [[ -x "$HOOK" ]] && { echo "[fixups] $HOOK"; SRC="$SRC" bash "$HOOK"; }
+
+# vendorsetup.sh из device tree применяет свои патчи (hardware/interfaces) при envsetup —
+# прогоняем один раз сейчас, пока git-объекты ещё на месте.
+( set +eu; source build/envsetup.sh 2>&1 | grep '\[ice-patches\]' ) || true
 true

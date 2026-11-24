@@ -33,6 +33,8 @@ done
 if [[ -z "$PINNED" ]]; then
   repo manifest -r -o "$ROM_ROOT/pinned.xml"
   echo "Pinned manifest: $ROM_ROOT/pinned.xml"
+else
+  [[ "$(realpath "$PINNED")" == "$(realpath -m "$ROM_ROOT/pinned.xml")" ]] || cp "$PINNED" "$ROM_ROOT/pinned.xml"
 fi
 du -sh "$SRC" 2>/dev/null || true
 df -h "$ROM_ROOT"
