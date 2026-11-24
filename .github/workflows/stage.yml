@@ -29,7 +29,10 @@ jobs:
       STAGE: ${{ inputs.stage }}
     steps:
       - name: Время старта
-        run: echo "JOB_START=$(date +%s)" >> "$GITHUB_ENV"
+        id: meta
+        run: |
+          echo "JOB_START=$(date +%s)" >> "$GITHUB_ENV"
+          echo "prev=$(( ${{ inputs.stage }} - 1 ))" >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@v7
         with: { path: crdroid-ice }
@@ -59,7 +62,7 @@ jobs:
         if: inputs.stage > 1
         uses: actions/download-artifact@v8
         with:
-          name: out-stage-${{ inputs.stage - 1 }}
+          name: out-stage-${{ steps.meta.outputs.prev }}
           path: /home/runner/rom/parts
 
       - name: Pinned manifest
