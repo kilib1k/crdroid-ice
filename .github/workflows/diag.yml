@@ -1,0 +1,39 @@
+# Диагностика: сколько места занимают исходники и что самое тяжёлое.
+name: Diag disk usage
+on:
+  workflow_dispatch:
+    inputs:
+      crdroid_branch: { type: choice, options: ["14.0", "15.0"], default: "14.0" }
+jobs:
+  diag:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      ROM_ROOT: /home/runner/rom
+      CRDROID_BRANCH: ${{ inputs.crdroid_branch }}
+    steps:
+      - uses: actions/checkout@v7
+        with: { path: crdroid-ice }
+      - run: crdroid-ice/scripts/free-space.sh
+      - uses: easimon/maximize-build-space@v10
+        with:
+          root-reserve-mb: 2048
+          temp-reserve-mb: 256
+          swap-size-mb: 1024
+          build-mount-path: /home/runner/rom
+          remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-haskell: 'true'
+          remove-codeql: 'true'
+          remove-docker-images: 'true'
+      - run: |
+          crdroid-ice/scripts/setup-runner.sh
+          echo "REPO_DIR=$GITHUB_WORKSPACE/crdroid-ice" >> "$GITHUB_ENV"
+      - run: crdroid-ice/scripts/sync.sh || true
+      - if: always()
+        run: |
+          cd /home/runner/rom/src
+          df -h .
+          echo "== .repo"; du -sh .repo; du -sh .repo/* 2>/dev/null
+          echo "== top objects"; du -s .repo/project-objects/* .repo/project-objects/*/* 2>/dev/null | sort -rn | head -40
+          echo "== top checkout"; du -s --exclude=.repo --exclude=.git ./* ./*/* ./*/*/* 2>/dev/null | sort -rn | head -60
